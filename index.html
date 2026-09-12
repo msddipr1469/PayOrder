@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>سامانه دستور پرداخت و خزانه‌داری - بازرگانی نوران</title>
+  <!-- کتابخانه‌های پشتیبان برای بازخوانی اسناد -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { background-color: #f1f5f9; margin: 0; padding: 12px; color: #0f172a; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .card { background: #ffffff; border-radius: 8px; padding: 18px 22px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); margin-bottom: 14px; border: 1px solid #cbd5e1; }
+    
+    /* سربرگ رسمی بازرگانی نوران */
+    .header-box { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 16px 24px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 4px solid #0284c7; }
+    .brand-title { font-size: 24px; font-weight: 900; letter-spacing: 0.5px; color: #f8fafc; }
+    .brand-sub { font-size: 13px; color: #38bdf8; margin-top: 3px; }
+    .live-clock { font-size: 15px; font-weight: bold; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); letter-spacing: 1px; }
+
+    /* مرحله ۱: فرم خلوت ورود اولیه */
+    .step1-container { max-width: 820px; margin: 20px auto; }
+    .step-title { font-size: 16px; font-weight: bold; color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+
+    /* درگاه آپلود سند */
+    .upload-zone { border: 2px dashed #0284c7; background: #f0f9ff; border-radius: 8px; padding: 18px; text-align: center; cursor: pointer; transition: 0.2s; margin-bottom: 18px; user-select: none; }
+    .upload-zone:hover { background: #e0f2fe; }
+    .upload-title { color: #0284c7; font-size: 13px; font-weight: bold; }
+    .upload-sub { font-size: 11px; color: #64748b; margin-top: 3px; }
+    #uploadStatusText { font-size: 12px; font-weight: bold; margin-top: 6px; display: none; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #334155; }
+    input, select { width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; }
+    input:focus, select:focus { outline: 2px solid #0284c7; border-color: transparent; }
+
+    /* باکس کادرهای روزشمار پویا */
+    .check-schedule-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 15px; }
+    .check-schedule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 10px; }
+    .schedule-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; }
+    .schedule-item label { font-size: 11px; color: #0284c7; margin-bottom: 2px; }
+    .calculated-date-tag { font-size: 11px; font-weight: bold; color: #059669; margin-top: 4px; display: block; }
+    
+    .btn { background: #0284c7; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s; }
+    .btn:hover { background: #0369a1; }
+    .btn-lg { padding: 12px 24px; font-size: 14px; border-radius: 8px; width: 100%; justify-content: center; }
+    .btn-secondary { background: #64748b; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-success { background: #10b981; }
+    .btn-success:hover { background: #059669; }
+    .btn-tool { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 4px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; }
+    .btn-tool:hover { background: #e2e8f0; }
+    .btn-tool.locked { background: #fef3c7; color: #b45309; border-color: #fcd34d; font-weight: bold; }
+
+    /* مرحله ۲: نوار خلاصه پرونده */
+    .summary-bar { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 18px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .summary-item { font-size: 12px; color: #475569; }
+    .summary-item strong { color: #0f172a; font-size: 13px; }
+
+    /* داشبورد مدیریتی */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .dash-card { background: #fff; border-radius: 8px; padding: 14px; border: 1px solid #cbd5e1; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+    .dash-card::before { content: ''; position: absolute; top: 0; right: 0; width: 4px; height: 100%; background: #0284c7; }
+    .dash-card.warning::before { background: #f59e0b; }
+    .dash-card.success::before { background: #10b981; }
+    .dash-card.purple::before { background: #8b5cf6; }
+    .dash-title { font-size: 11px; color: #64748b; font-weight: bold; }
+    .dash-value { font-size: 16px; font-weight: 900; color: #0f172a; margin-top: 4px; }
+    .dash-sub { font-size: 11px; color: #0284c7; margin-top: 3px; }
+
+    /* تایم‌لاین از چپ به راست */
+    .timeline-header { display: flex; justify-content: flex-start; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 10px; }
+    .timeline-controls { display: flex; align-items: center; gap: 6px; }
+    .tl-mode-btn { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
+    .tl-mode-btn.active { background: #0284c7; color: #fff; border-color: #0284c7; }
+    
+    .timeline-viewport { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px 16px; min-height: 200px; width: 100%; overflow-x: auto; overflow-y: visible; direction: ltr; }
+
+    /* المان پل ارتباطی پویا (شکلک تقویم متحرک رو به جلو) */
+    .dynamic-calendar-bridge { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 140px; flex-shrink: 0; direction: rtl; padding: 0 10px; }
+    .dynamic-calendar-badge { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; border-radius: 20px; padding: 4px 10px; font-size: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(30,64,175,0.08); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .bridge-arrow-line { width: 100%; height: 2px; background: #3b82f6; position: relative; margin-top: 6px; }
+    .bridge-arrow-line::after { content: ''; position: absolute; right: 0; top: -3px; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid #3b82f6; }
+
+    /* کارت‌های توالی زنجیره‌ای */
+    .flow-chain { display: flex; align-items: center; gap: 8px; padding: 6px; width: 100%; direction: ltr; }
+    .flow-card { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; text-align: center; min-width: 145px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); flex-shrink: 0; direction: rtl; position: relative; }
+    .flow-card.purchase-origin { background: #fffbeb; border-color: #fde68a; }
+    .flow-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #64748b; font-size: 10px; font-weight: bold; min-width: 65px; flex-shrink: 0; direction: rtl; }
+    .flow-arrow-line { width: 100%; height: 2px; background: #94a3b8; position: relative; margin-top: 3px; }
+    .flow-arrow-line::after { content: ''; position: absolute; right: 0; top: -3px; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid #94a3b8; }
+
+    /* آیکون چک و کارت شناور بدون بریدگی (Tooltip هوشمند) */
+    .timeline-check-node { position: relative; cursor: pointer; }
+    .timeline-check-node:hover .check-tooltip { visibility: visible; opacity: 1; }
+    
+    .check-tooltip {
+      visibility: hidden; opacity: 0;
+      position: absolute; left: 50%; transform: translateX(-50%);
+      background: #0f172a; color: #fff;
+      padding: 10px 12px; border-radius: 6px; font-size: 11px; line-height: 1.6;
+      width: 220px; z-index: 999999; pointer-events: none;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.35); text-align: right; direction: rtl;
+      transition: opacity 0.2s;
+    }
+    .tt-down { top: calc(100% + 8px); }
+    .tt-down::after {
+      content: ''; position: absolute; bottom: 100%; left: 50%; margin-left: -5px;
+      border-width: 5px; border-style: solid; border-color: transparent transparent #0f172a transparent;
+    }
+    .tt-up { bottom: calc(100% + 8px); }
+    .tt-up::after {
+      content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+      border-width: 5px; border-style: solid; border-color: #0f172a transparent transparent transparent;
+    }
+
+    .tt-header { font-weight: bold; color: #38bdf8; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; margin-bottom: 4px; }
+    .tt-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+    .tt-label { color: #94a3b8; }
+    .tt-val { font-weight: bold; color: #fff; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+    th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: center; vertical-align: middle; }
+    th { background: #f8fafc; color: #1e293b; font-weight: bold; }
+    .amount-words { font-size: 11px; color: #0284c7; margin-top: 3px; display: block; font-weight: normal; }
+    
+    .status-bar { padding: 12px 16px; border-radius: 6px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+    .status-balanced { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .status-unbalanced { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .friday-badge { display: inline-block; background: #fee2e2; color: #ef4444; border: 1px solid #f87171; border-radius: 4px; padding: 1px 4px; font-size: 10px; margin-top: 2px; font-weight: bold; }
+    
+    /* تقویم بازشو ضد پنهان‌شدگی */
+    #shamsiDatePickerModal {
+      position: fixed;
+      z-index: 9999999 !important;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      border-radius: 8px;
+      border: 1px solid #64748b;
+      display: none;
+      width: 290px;
+      padding: 12px;
+      user-select: none;
+    }
+    .dp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    .dp-day-name { font-size: 11px; font-weight: bold; color: #64748b; padding: 3px 0; }
+    .dp-day-btn { padding: 6px 0; border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .dp-day-btn:hover { background: #0284c7; color: #fff; }
+    .dp-selected { background: #0284c7 !important; color: #fff !important; }
+    .dp-friday { color: #dc2626; background: #fff1f2; }
+
+    /* چاپ رسمی خزانه بدون نقطه‌چین */
+    #printArea { display: none; background: #fff; padding: 25px; font-size: 12px; }
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea { display: block; position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
+    .print-border-box { border: 1px solid #000; padding: 12px; margin-bottom: 12px; border-radius: 4px; }
+    .print-signatures { display: flex; justify-content: space-between; margin-top: 35px; padding: 0 20px; text-align: center; }
+    .sig-block { width: 180px; border-top: 1px dashed #000; padding-top: 6px; font-size: 11px; font-weight: bold; }
+    .fill-line { display: inline-block; border-bottom: 1px solid #475569; min-width: 140px; margin: 0 5px; height: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="container no-print">
+
+  <!-- سربرگ رسمی مشترک -->
+  <div class="header-box">
+    <div>
+      <div class="brand-title">بازرگانی نوران</div>
+      <div class="brand-sub">سامانه هوشمند صدور دستور پرداخت، تقسیط اسناد تجاری و خزانه‌داری</div>
+    </div>
+    <div class="live-clock" id="liveTimeText">ساعت --:--:--</div>
+  </div>
+
+  <!-- ==================== مرحله ۱: فرم خلوت ورود اطلاعات ==================== -->
+  <div id="step1View" class="step1-container">
+    <div class="card">
+      <div class="step-title">
+        <span>📋 مرحله اول: ثبت اطلاعات پایه طرف‌حساب و شرایط تسویه</span>
+      </div>
+
+      <!-- درگاه خوانش خودکار سند -->
+      <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-title">📄 جهت ثبت خودکار، فایل PDF یا عکس سند تجاری را اینجا رها کنید (یا کلیک فرمایید)</div>
+        <div class="upload-sub">شناسایی مستقیم مانده نهایی بستانکاری، تاریخ اولین بدهی و مشخصات طرف‌حساب</div>
+        <div id="uploadStatusText"></div>
+        <input type="file" id="fileInput" style="display: none;" accept=".pdf,image/*" onchange="handleIncomingFiles(this.files)">
+      </div>
+
+      <div class="grid">
+        <div style="grid-column: span 2;">
+          <label>نام و عنوان طرف‌حساب تجاری (مشتری / فروشنده):</label>
+          <input type="text" id="partnerName" placeholder="نام کامل شخص یا شرکت...">
+        </div>
+        <div>
+          <label>شماره معین / کد حسابداری:</label>
+          <input type="text" id="accountNo" placeholder="کد شخص یا سند...">
+        </div>
+        <div>
+          <label>کل مبلغ بدهی / مانده بستانکاری (ریال):</label>
+          <input type="text" id="totalBalanceFormatted" placeholder="۰" oninput="handleTotalBalanceInput(this)">
+          <span class="amount-words" id="totalBalanceWords"></span>
+        </div>
+        <div>
+          <label>تاریخ اولین بدهی (فاکتور مبنای تسویه):</label>
+          <input type="text" id="firstDebtDate" readonly onclick="openShamsiPicker(this)" onchange="renderScheduleInputs()" style="cursor: pointer; font-weight: bold; background: #fff;" placeholder="مثلاً: ۱۴۰۵/۰۶/۰۱">
+        </div>
+        <div>
+          <label>تعداد کل فقرات چک:</label>
+          <input type="number" id="setupCheckCount" value="4" min="1" max="12" style="font-weight: bold; text-align: center;" oninput="renderScheduleInputs()">
+        </div>
+      </div>
+
+      <!-- کادرهای روزشمار پویا برای تک‌تک چک‌ها -->
+      <div class="check-schedule-box">
+        <label style="font-size: 12px; font-weight: bold; color: #0f172a;">تنظیم روزشمار سررسید هر چک (فاصله از تاریخ اولین بدهی):</label>
+        <div class="check-schedule-grid" id="scheduleInputsGrid"></div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <button type="button" class="btn btn-success btn-lg" onclick="goToStep2()">➔ ثبت اولیه و ورود به میزکار صدور اسناد</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== مرحله ۲: میزکار خزانه‌داری و صدور سند ==================== -->
+  <div id="step2View" style="display: none;">
+    <!-- نوار خلاصه پرونده و بازگشت -->
+    <div class="summary-bar">
+      <div class="summary-item">طرف‌حساب: <strong id="sumPartner">---</strong></div>
+      <div class="summary-item">کد معین: <strong id="sumAccNo">---</strong></div>
+      <div class="summary-item">مبلغ کل بستانکاری: <strong id="sumTotal" style="color: #0284c7;">۰ ریال</strong></div>
+      <div class="summary-item">تاریخ اولین بدهی: <strong id="sumDebtDate" style="color: #b45309;">---</strong></div>
+      <button type="button" class="btn btn-secondary" onclick="goToStep1()">✏️ ویرایش اطلاعات پایه (بازگشت)</button>
+    </div>
+
+    <!-- داشبورد مدیریتی با تفکیک دوگانه رأس -->
+    <div class="dashboard-grid">
+      <div class="dash-card warning">
+        <div class="dash-title">⏳ زمان باقی‌مانده تا سررسید اولین چک</div>
+        <div class="dash-value" id="dashCountdownText">در حال محاسبه...</div>
+        <div class="dash-sub" id="dashFirstCheckSub">سررسید اولین تعهد نقدینگی</div>
+      </div>
+      <div class="dash-card purple">
+        <div class="dash-title">🤝 رأس اعتباری تسویه (از تاریخ اولین بدهی)</div>
+        <div class="dash-value" id="dashCreditDays">---</div>
+        <div class="dash-sub">مدت توافق خواب پول طرف‌حساب</div>
+      </div>
+      <div class="dash-card success">
+        <div class="dash-title">🏦 رأس نقدینگی خزانه (از تاریخ امروز)</div>
+        <div class="dash-value" id="dashWeightedDays">---</div>
+        <div class="dash-sub">فرصت گردش نقدینگی حساب‌های شرکت</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-title">🗓 توزیع تعهدات ماهانه خزانه</div>
+        <div class="dash-value" id="dashMonthlySum">---</div>
+        <div class="dash-sub">سرجمع تعهدات در ماه‌های آتی</div>
+      </div>
+    </div>
+
+    <!-- تایم‌لاین سه‌حالته استاندارد -->
+    <div class="card">
+      <div class="timeline-header">
+        <div class="timeline-controls">
+          <button type="button" class="tl-mode-btn active" onclick="setTimelineMode('calendar')">📅 تقویم ماه‌به‌ماه</button>
+          <button type="button" class="tl-mode-btn" onclick="setTimelineMode('step')">📏 خط‌کش روزشمار</button>
+          <button type="button" class="tl-mode-btn" onclick="setTimelineMode('flow')">🔗 کارت‌های توالی</button>
+          <!-- ورودی آزاد و دستی برای بازه خط‌کش روزشمار -->
+          <div id="tlStepWrapper" style="display: none; align-items: center; gap: 4px; margin-right: 8px;">
+            <span style="font-size: 11px; color: #475569;">بازه خط‌کش:</span>
+            <input type="number" id="tlManualStepInput" value="30" min="5" max="120" style="width: 65px; padding: 4px 6px; font-size: 11px; font-weight: bold; text-align: center;" oninput="renderActiveTimeline()">
+            <span style="font-size: 11px; color: #475569;">روزه</span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-viewport" id="timelineViewport"></div>
+    </div>
+
+    <!-- جدول چک‌ها با تسهیم پویا، قفل سطرها و تراز هوشمند -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0; font-size: 15px; border: none; padding: 0;">برنامه اسناد تجاری (چک‌های صادره)</h3>
+        <button type="button" class="btn btn-secondary" onclick="addNewCheckRow(0, '', 'تسویه قسط')">+ افزودن چک دستی</button>
+      </div>
+
+      <table id="checksTable">
+        <thead>
+          <tr>
+            <th style="width: 35px;">ردیف</th>
+            <th style="width: 230px;">مبلغ چک (ریال - ۳ رقم جدا)</th>
+            <th style="width: 150px;">سررسید چک (شمسی)</th>
+            <th>بابت / شماره فاکتور / شرح</th>
+            <th style="width: 75px;" title="قفل کردن سطر برای عدم دستکاری در تسهیم پویا">قفل</th>
+            <th style="width: 100px;" title="انتقال فوری کل کسری/مازاد به این چک">تراز هوشمند</th>
+            <th style="width: 45px;">حذف</th>
+          </tr>
+        </thead>
+        <tbody id="checksBody"></tbody>
+      </table>
+
+      <!-- نوار وضعیت تراز -->
+      <div id="statusBar" class="status-bar status-balanced">
+        <div>
+          <span id="balanceText">وضعیت: تراز کامل</span>
+          <span style="margin-right: 20px; font-weight: normal;" id="summaryWeightedText">---</span>
+        </div>
+        <div>جمع اسناد: <span id="allocatedSumText">۰</span> ریال</div>
+      </div>
+
+      <!-- دکمه‌های اقدام -->
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+        <button type="button" class="btn btn-secondary" onclick="copyWhatsAppSummary()">📱 کپی خلاصه برای پیام‌رسان (ایتا / واتساپ)</button>
+        <button type="button" class="btn btn-success" style="font-size: 13px;" onclick="printOrderSheet()">🖨 صدور و چاپ دستور پرداخت خزانه (A4)</button>
+        <button type="button" class="btn btn-secondary" onclick="saveCurrentOrder()">💾 ثبت در بایگانی سوابق</button>
+      </div>
+    </div>
+
+    <!-- تاریخچه سوابق -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="margin:0; border:none; padding:0; font-size: 14px;">سوابق دستورهای پرداخت ثبت‌شده در این سیستم</h3>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn btn-secondary" style="font-size: 11px;" onclick="exportBackup()">💾 پشتیبان (Backup)</button>
+          <button type="button" class="btn btn-secondary" style="font-size: 11px;" onclick="document.getElementById('restoreFileInput').click()">📂 بازیابی (Restore)</button>
+          <input type="file" id="restoreFileInput" style="display: none;" accept=".json" onchange="importBackup(this)">
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>کد پیگیری</th>
+            <th>کد معین</th>
+            <th>طرف‌حساب</th>
+            <th>مبلغ کل (ریال)</th>
+            <th>تعداد چک</th>
+            <th>تاریخ ثبت</th>
+            <th>عملیات</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- تاریخ روز سیستم (مبنای دستور پرداخت) -->
+<input type="hidden" id="orderDate">
+
+<!-- تقویم بازشو ضد پنهان‌شدگی -->
+<div id="shamsiDatePickerModal">
+  <div class="dp-header">
+    <button type="button" class="btn btn-secondary" style="padding: 2px 8px;" onclick="changeDPMonth(-1)">◀</button>
+    <div style="display: flex; gap: 4px;">
+      <select id="dpMonthSelect" onchange="onDPSelectChange()"></select>
+      <select id="dpYearSelect" onchange="onDPSelectChange()"></select>
+    </div>
+    <button type="button" class="btn btn-secondary" style="padding: 2px 8px;" onclick="changeDPMonth(1)">▶</button>
+  </div>
+  <div class="dp-grid">
+    <div class="dp-day-name">ش</div>
+    <div class="dp-day-name">ی</div>
+    <div class="dp-day-name">د</div>
+    <div class="dp-day-name">س</div>
+    <div class="dp-day-name">چ</div>
+    <div class="dp-day-name">پ</div>
+    <div class="dp-day-name" style="color:#dc2626;">ج</div>
+  </div>
+  <div class="dp-grid" id="dpDaysGrid" style="margin-top: 4px;"></div>
+</div>
+
+<!-- فرم رسمی چاپی استاندارد A4 خزانه (بدون نقطه‌چین) -->
+<div id="printArea">
+  <div style="border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h2 style="margin: 0; font-size: 18px; font-weight: 900;">مجموعه بازرگانی نوران</h2>
+      <div style="font-size: 12px; font-weight: bold; margin-top: 3px;">برگ رسمی دستور صدور و تحویل اسناد تجاری (چک)</div>
+    </div>
+    <div style="text-align: left; font-size: 11px; line-height: 1.7;">
+      <div><strong>شماره عطف:</strong> <span id="prnRefNo"></span></div>
+      <div><strong>تاریخ صدور:</strong> <span id="prnDate"></span></div>
+      <div><strong>تاریخ اولین بدهی:</strong> <span id="prnDebtDate"></span></div>
+      <div><strong>رأس اسناد:</strong> <span id="prnWeighted"></span></div>
+    </div>
+  </div>
+
+  <div class="print-border-box">
+    <div style="font-size: 12px; line-height: 1.9;">
+      <strong>مدیر محترم خزانه‌داری؛</strong><br>
+      احتراماً، پیرو وضعیت حساب قطعی طرف‌حساب تجاری <strong><span id="prnPartner"></span></strong> (کد شخص/معین: <strong><span id="prnAccNo"></span></strong>)، خواهشمند است نسبت به صدور اسناد تجاری به مبلغ کل <strong><span id="prnTotalNum"></span> ریال</strong> (<span id="prnTotalWords" style="font-weight: bold;"></span>) در قالب <strong><span id="prnCheckCount"></span> فقره چک</strong> به شرح جدول ذیل اقدام فرمایید:
+    </div>
+
+    <table style="width: 100%; margin-top: 10px; table-layout: fixed;">
+      <thead>
+        <tr>
+          <th style="width: 35px;">ردیف</th>
+          <th style="width: 115px;">مبلغ به عدد (ریال)</th>
+          <th style="width: 42%;">مبلغ به حروف (ریال و معادل تومان)</th>
+          <th style="width: 90px;">سررسید چک</th>
+          <th>بابت فاکتور / شرح سند</th>
+        </tr>
+      </thead>
+      <tbody id="prnTableBodyA"></tbody>
+    </table>
+
+    <div class="print-signatures">
+      <div class="sig-block">کارشناس حسابداری و کنترل حساب</div>
+      <div class="sig-block">مدیر داخلی مجموعه</div>
+      <div class="sig-block">تأیید مدیریت عامل / مجاز مالی</div>
+    </div>
+  </div>
+
+  <div class="print-border-box" style="margin-top: 10px; background: #fafafa;">
+    <div style="font-weight: bold; font-size: 12px; margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 3px;">
+      اقدام خزانه‌داری و مشخصات چک‌های صیادی صادره
+    </div>
+    <table style="width: 100%; margin-top: 5px; table-layout: fixed;">
+      <thead>
+        <tr>
+          <th style="width: 35px;">ردیف</th>
+          <th style="width: 190px;">شناسه صیادی ۱۶ رقمی چک</th>
+          <th style="width: 180px;">نام بانک و شماره حساب</th>
+          <th style="width: 90px;">تاریخ صدور</th>
+          <th>امضای صادرکننده چک (خزانه)</th>
+        </tr>
+      </thead>
+      <tbody id="prnTableBodyB"></tbody>
+    </table>
+
+    <div style="margin-top: 14px; border: 1px dashed #475569; padding: 12px; border-radius: 4px; font-size: 11px; line-height: 2.2;">
+      <strong>رسید دریافت فیزیک چک (مخصوص دریافت‌کننده / ذینفع / پیک):</strong><br>
+      اینجانب <span class="fill-line" style="min-width: 160px;"></span> با کدملی <span class="fill-line" style="min-width: 130px;"></span> اصالتاً / وکالتاً به نمایندگی از طرف‌حساب فوق، تعداد <span id="prnReceiptCount" style="font-weight: bold; padding: 0 4px;"></span> فقره چک مشروحه بالا را به صورت صحیح و سالم تحویل گرفتم.<br>
+      شماره همراه: <span class="fill-line" style="min-width: 130px;"></span> تاریخ دریافت: <span class="fill-line" style="min-width: 110px;"></span> امضا و اثر انگشت: <span class="fill-line" style="min-width: 160px;"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  }
+
+  // --- تولید کادرهای روزشمار پویا در مرحله اول ---
+  const defaultIntervalPresets = [60, 90, 120, 150, 180, 210, 240, 270];
+
+  function renderScheduleInputs() {
+    const count = parseInt(document.getElementById('setupCheckCount').value, 10) || 1;
+    const grid = document.getElementById('scheduleInputsGrid');
+    const debtDate = document.getElementById('firstDebtDate').value.trim();
+    const pDebt = parseShamsi(debtDate);
+
+    const currentVals = [];
+    document.querySelectorAll('.schedule-days-input').forEach(inp => currentVals.push(parseInt(inp.value, 10)));
+
+    grid.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const defaultDays = currentVals[i] || defaultIntervalPresets[i] || ((i + 1) * 30);
+      let calculatedDateStr = '---';
+      if (pDebt) {
+        calculatedDateStr = addDaysToJalali(pDebt.y, pDebt.m, pDebt.d, defaultDays);
+      }
+
+      const item = document.createElement('div');
+      item.className = 'schedule-item';
+      item.innerHTML = `
+        <label>چک شماره ${enToFaDigits(i + 1)}:</label>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <input type="number" class="schedule-days-input" data-index="${i}" value="${defaultDays}" min="1" max="720" style="padding: 5px; font-weight: bold; text-align: center;" oninput="updateSingleScheduleDate(this)">
+          <span style="font-size: 11px; color: #475569;">روزه</span>
+        </div>
+        <span class="calculated-date-tag" id="calcDateTag_${i}">سررسید: ${calculatedDateStr}</span>
+      `;
+      grid.appendChild(item);
+    }
+  }
+
+  function updateSingleScheduleDate(input) {
+    const i = input.getAttribute('data-index');
+    const days = parseInt(input.value, 10) || 0;
+    const debtDate = document.getElementById('firstDebtDate').value.trim();
+    const pDebt = parseShamsi(debtDate);
+    const tag = document.getElementById(`calcDateTag_${i}`);
+
+    if (pDebt && days > 0) {
+      const dt = addDaysToJalali(pDebt.y, pDebt.m, pDebt.d, days);
+      tag.innerText = `سررسید: ${dt}`;
+    } else {
+      tag.innerText = 'سررسید: ---';
+    }
+  }
+
+  // --- جریان ناوبری دو مرحله‌ای ---
+  function goToStep2() {
+    const totalBal = cleanNum(document.getElementById('totalBalanceFormatted').value);
+    const partner = document.getElementById('partnerName').value.trim();
+    const debtDt = document.getElementById('firstDebtDate').value.trim();
+    const count = parseInt(document.getElementById('setupCheckCount').value, 10) || 1;
+
+    if (totalBal <= 0) {
+      alert('لطفاً مبلغ کل بدهی / بستانکاری را وارد فرمایید.');
+      return;
+    }
+    if (!debtDt) {
+      alert('لطفاً تاریخ اولین بدهی را تعیین فرمایید.');
+      return;
+    }
+
+    document.getElementById('sumPartner').innerText = partner || 'طرف‌حساب تجاری';
+    document.getElementById('sumAccNo').innerText = document.getElementById('accountNo').value || '---';
+    document.getElementById('sumTotal').innerText = `${formatMoney(totalBal)} ریال`;
+    document.getElementById('sumDebtDate').innerText = debtDt;
+
+    const tbody = document.getElementById('checksBody');
+    tbody.innerHTML = '';
+
+    const baseAmt = Math.floor(totalBal / count);
+    const remainder = totalBal - (baseAmt * count);
+
+    const pDebt = parseShamsi(debtDt);
+    const dayInputs = document.querySelectorAll('.schedule-days-input');
+
+    for (let i = 0; i < count; i++) {
+      const isLast = (i === count - 1);
+      const rowAmt = isLast ? (baseAmt + remainder) : baseAmt;
+      const daysFromDebt = dayInputs[i] ? (parseInt(dayInputs[i].value, 10) || ((i + 1) * 30)) : ((i + 1) * 30);
+      const rowDate = addDaysToJalali(pDebt.y, pDebt.m, pDebt.d, daysFromDebt);
+
+      addNewCheckRow(rowAmt, rowDate, `قسط شماره ${enToFaDigits(i + 1)} (${enToFaDigits(daysFromDebt)} روزه از بدهی)`);
+    }
+
+    document.getElementById('step1View').style.display = 'none';
+    document.getElementById('step2View').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    runRecalculate();
+  }
+
+  function goToStep1() {
+    document.getElementById('step2View').style.display = 'none';
+    document.getElementById('step1View').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // --- تسهیم پویا (مدل ۲)، قفل سطرها و تراز هوشمند ---
+  let isDynamicRebalancing = false;
+
+  function onCheckAmountInput(inputElem) {
+    if (isDynamicRebalancing) return;
+
+    const row = inputElem.closest('tr');
+    const rowIndex = parseInt(row.getAttribute('data-row-index'), 10);
+    const currentVal = cleanNum(inputElem.value);
+    inputElem.value = formatMoney(currentVal);
+
+    const totalBal = cleanNum(document.getElementById('totalBalanceFormatted').value);
+    const allRows = Array.from(document.querySelectorAll('#checksBody tr'));
+
+    const otherUnlockedRows = allRows.filter(r => {
+      const idx = parseInt(r.getAttribute('data-row-index'), 10);
+      const isLocked = r.getAttribute('data-locked') === 'true';
+      return idx !== rowIndex && !isLocked;
+    });
+
+    let fixedSum = currentVal;
+    allRows.forEach(r => {
+      const idx = parseInt(r.getAttribute('data-row-index'), 10);
+      const isLocked = r.getAttribute('data-locked') === 'true';
+      if (idx !== rowIndex && isLocked) {
+        fixedSum += cleanNum(r.querySelector('.chk-amount-input').value);
+      }
+    });
+
+    const deltaToDistribute = totalBal - fixedSum;
+
+    if (otherUnlockedRows.length > 0 && deltaToDistribute >= 0) {
+      isDynamicRebalancing = true;
+      const count = otherUnlockedRows.length;
+      const baseAmt = Math.floor(deltaToDistribute / count);
+      const remainder = deltaToDistribute - (baseAmt * count);
+
+      otherUnlockedRows.forEach((r, i) => {
+        const isLast = (i === count - 1);
+        const finalAmt = isLast ? (baseAmt + remainder) : baseAmt;
+        r.querySelector('.chk-amount-input').value = formatMoney(finalAmt);
+      });
+      isDynamicRebalancing = false;
+    }
+
+    runRecalculate();
+  }
+
+  function toggleRowLock(btn) {
+    const row = btn.closest('tr');
+    const isLocked = row.getAttribute('data-locked') === 'true';
+    if (isLocked) {
+      row.setAttribute('data-locked', 'false');
+      btn.className = 'btn-tool';
+      btn.innerText = '🔓';
+      btn.title = 'سطر شناور است (در تسهیم پویا تغییر می‌کند)';
+    } else {
+      row.setAttribute('data-locked', 'true');
+      btn.className = 'btn-tool locked';
+      btn.innerText = '🔒';
+      btn.title = 'سطر قفل شد (در تسهیم پویا دست نمی‌خورد)';
+    }
+  }
+
+  function smartBalanceOnRow(btn) {
+    const row = btn.closest('tr');
+    const totalBal = cleanNum(document.getElementById('totalBalanceFormatted').value);
+    
+    let sumOthers = 0;
+    const allRows = document.querySelectorAll('#checksBody tr');
+    allRows.forEach(r => {
+      if (r !== row) sumOthers += cleanNum(r.querySelector('.chk-amount-input').value);
+    });
+
+    const newAmt = totalBal - sumOthers;
+    if (newAmt < 0) {
+      alert('جمع سایر چک‌ها بیشتر از مبلغ کل بدهی است.');
+      return;
+    }
+
+    row.querySelector('.chk-amount-input').value = formatMoney(newAmt);
+    runRecalculate();
+  }
+
+  let rowIdCounter = 0;
+  function addNewCheckRow(amount = 0, dateStr = '', desc = 'تسویه قسط') {
+    const tbody = document.getElementById('checksBody');
+    rowIdCounter++;
+
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-row-index', rowIdCounter);
+    tr.setAttribute('data-locked', 'false');
+
+    tr.innerHTML = `
+      <td class="row-index"></td>
+      <td>
+        <input type="text" class="chk-amount-input" value="${amount > 0 ? formatMoney(amount) : ''}" placeholder="۰" oninput="onCheckAmountInput(this)">
+        <span class="amount-words"></span>
+      </td>
+      <td>
+        <input type="text" class="chk-date" value="${enToFaDigits(dateStr)}" placeholder="انتخاب تاریخ" readonly onclick="openShamsiPicker(this)" style="cursor: pointer;">
+        <div class="date-meta"></div>
+      </td>
+      <td><input type="text" class="chk-desc" value="${desc}"></td>
+      <td>
+        <button type="button" class="btn-tool" onclick="toggleRowLock(this)" title="قفل کردن سطر">🔓</button>
+      </td>
+      <td>
+        <button type="button" class="btn-tool" onclick="smartBalanceOnRow(this)" style="color: #0284c7; font-weight: bold;" title="جذب اختلاف به این چک">🎯 تراز</button>
+      </td>
+      <td><button type="button" class="btn-danger" onclick="removeCheckRow(this)" style="padding: 2px 6px;">X</button></td>
+    `;
+    tbody.appendChild(tr);
+    runRecalculate();
+  }
+
+  function removeCheckRow(btn) {
+    btn.closest('tr').remove();
+    runRecalculate();
+  }
+
+  // --- استخراج هوشمند با تمرکز قطعی بر «بستانکار» و «تاریخ اولین بدهی» ---
+  const dropZone = document.getElementById('dropZone');
+  ['dragenter', 'dragover'].forEach(n => dropZone.addEventListener(n, e => { e.preventDefault(); dropZone.classList.add('dragover'); }));
+  ['dragleave', 'drop'].forEach(n => dropZone.addEventListener(n, e => { e.preventDefault(); dropZone.classList.remove('dragover'); }));
+  dropZone.addEventListener('drop', e => handleIncomingFiles(e.dataTransfer.files));
+
+  async function handleIncomingFiles(files) {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const statusText = document.getElementById('uploadStatusText');
+    statusText.style.display = 'block';
+    statusText.style.color = '#d97706';
+    statusText.innerText = '⏳ در حال بازخوانی هوشمند سند...';
+
+    try {
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        await processPdfDirect(file);
+      } else if (file.type.startsWith('image/')) {
+        const result = await Tesseract.recognize(file, 'fas+eng');
+        parseExtractedText(result.data.text);
+      } else {
+        const reader = new FileReader();
+        reader.onload = e => parseExtractedText(e.target.result);
+        reader.readAsText(file);
+      }
+    } catch (err) {
+      console.error(err);
+      statusText.style.color = '#dc2626';
+      statusText.innerText = '❌ خطا در خواندن فایل.';
+    }
+  }
+
+  async function decompressFlate(bytes) {
+    try {
+      const ds = new DecompressionStream('deflate');
+      const writer = ds.writable.getWriter();
+      writer.write(bytes); writer.close();
+      const reader = ds.readable.getReader();
+      const chunks = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      const totalLen = chunks.reduce((acc, c) => acc + c.length, 0);
+      const res = new Uint8Array(totalLen);
+      let offset = 0;
+      for (const c of chunks) { res.set(c, offset); offset += c.length; }
+      return new TextDecoder('utf-8').decode(res);
+    } catch (e) { return ''; }
+  }
+
+  async function processPdfDirect(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+    const latinStr = new TextDecoder('latin1').decode(uint8);
+    let fullText = '';
+
+    const streamRegex = /stream[\r\n]+([\s\S]*?)[\r\n]+endstream/g;
+    let match;
+    while ((match = streamRegex.exec(latinStr)) !== null) {
+      const streamBytes = new Uint8Array(match[1].length);
+      for (let i = 0; i < match[1].length; i++) streamBytes[i] = match[1].charCodeAt(i);
+      const decompressed = await decompressFlate(streamBytes);
+      if (decompressed) fullText += decompressed + '\n';
+    }
+
+    fullText += '\n' + new TextDecoder('utf-8').decode(uint8);
+
+    if ((!fullText || fullText.trim().length === 0) && window.pdfjsLib) {
+      try {
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer, isEvalSupported: false, useSystemFonts: true });
+        const pdf = await loadingTask.promise;
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+        }
+      } catch (e) { console.warn('PDF.js fallback'); }
+    }
+
+    parseExtractedText(fullText);
+  }
+
+  function parseExtractedText(raw) {
+    const statusText = document.getElementById('uploadStatusText');
+    if (!raw || raw.trim().length === 0) {
+      statusText.style.color = '#dc2626';
+      statusText.innerText = '❌ متنی از سند یافت نشد.';
+      return;
+    }
+
+    let text = raw.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[،٫]/g, ',');
+    let cleanEn = faToEnDigits(text);
+
+    let extractedName = '';
+    let extractedCode = '';
+    let extractedBalance = 0;
+    let extractedDebtDate = '';
+
+    // ۱. استخراج نام طرف‌حساب
+    const nameMatches = [
+      text.match(/شخص[:\s]*[0-9۰-۹]*\s*[-_–]\s*([^\n\r]+?)(?=\s*نمایش|\s*واحد|\s*پروژه|\s*صفحه|$)/i),
+      text.match(/(?:مشتری|خریدار|طرف حساب|به نام|نام شخص)[:\s]*([^\n\r,]+?)(?=\s*صفحه|\s*شماره|\s*کد|\s*تاریخ|$)/i),
+      text.match(/(?:شرکت تولیدی بازرگانی|شرکت|فروشگاه|بازرگانی)[^\n\r]+?(?=\n|\r|$)/i)
+    ];
+    for (let m of nameMatches) {
+      if (m && m[1]) {
+        extractedName = m[1].replace(/[-_–]/g, '').trim();
+        break;
+      } else if (m && m[0] && !extractedName) {
+        extractedName = m[0].trim();
+      }
+    }
+
+    // ۲. استخراج کد شخص / معین
+    const codeMatch = cleanEn.match(/شخص[:\s]*([0-9]{4,8})/) || cleanEn.match(/(?:کد شخص|کد معین|کد مشتری|شماره فاکتور|شماره)[:\s]*([0-9]{3,8})/);
+    if (codeMatch) extractedCode = enToFaDigits(codeMatch[1]);
+
+    // ۳. استخراج قطعی مانده تراز نهایی با تمرکز قطعی بر «بستانکار»
+    const bestankarMatch = cleanEn.match(/([0-9,]{6,})\s*(?:ریال)?\s*بستانکار/i) ||
+                           text.match(/([0-9۰-۹,]{6,})\s*(?:ریال)?\s*بستانکار/i) ||
+                           cleanEn.match(/بستانکار[^\d]*([0-9,]{6,})/i);
+
+    if (bestankarMatch) {
+      extractedBalance = cleanNum(bestankarMatch[1]);
+    } else {
+      const sumMatches = [...cleanEn.matchAll(/(?:جمع کل|جمع|قابل پرداخت|پرداختی)[^\d]*([0-9,]{6,})/gi)];
+      if (sumMatches.length > 0) extractedBalance = cleanNum(sumMatches[sumMatches.length - 1][1]);
+    }
+
+    // ۴. استخراج تاریخ اولین بدهی (مثلاً اولین فاکتور تسویه‌نشده ۱۴۰۵/۰۶/۰۱)
+    const invoiceDateMatches = [...cleanEn.matchAll(/فاکتور خرید[^\n\r]*?(\d{4}\/\d{2}\/\d{2})/gi)];
+    if (invoiceDateMatches.length > 0) {
+      extractedDebtDate = enToFaDigits(invoiceDateMatches[0][1]);
+    } else {
+      const allDates = [...cleanEn.matchAll(/(\d{4}\/\d{2}\/\d{2})/g)];
+      if (allDates.length > 0) extractedDebtDate = enToFaDigits(allDates[0][1]);
+    }
+
+    if (extractedName) document.getElementById('partnerName').value = extractedName;
+    if (extractedCode) document.getElementById('accountNo').value = extractedCode;
+    if (extractedBalance > 0) document.getElementById('totalBalanceFormatted').value = formatMoney(extractedBalance);
+    if (extractedDebtDate) {
+      document.getElementById('firstDebtDate').value = extractedDebtDate;
+      renderScheduleInputs();
+    }
+
+    document.getElementById('totalBalanceWords').innerText = extractedBalance > 0 ? numToWords(extractedBalance) : '';
+
+    if (extractedBalance > 0 || extractedName) {
+      statusText.style.display = 'block';
+      statusText.style.color = '#166534';
+      statusText.innerText = `✅ مشخصات استخراج شد (مانده نهایی بستانکاری: ${formatMoney(extractedBalance)} ریال | تاریخ اولین بدهی: ${extractedDebtDate || '---'})`;
+    } else {
+      statusText.style.display = 'block';
+      statusText.style.color = '#dc2626';
+      statusText.innerText = '⚠️ استخراج خودکار انجام نشد. لطفاً اطلاعات را دستی وارد فرمایید.';
+    }
+  }
+
+  // --- سیستم تایم‌لاین سه‌حالته پیشرفته ---
+  let currentTimelineMode = 'calendar';
+
+  function setTimelineMode(mode) {
+    currentTimelineMode = mode;
+    document.querySelectorAll('.tl-mode-btn').forEach(b => b.classList.remove('active'));
+    if (mode === 'calendar') document.querySelectorAll('.tl-mode-btn')[0].classList.add('active');
+    if (mode === 'step') document.querySelectorAll('.tl-mode-btn')[1].classList.add('active');
+    if (mode === 'flow') document.querySelectorAll('.tl-mode-btn')[2].classList.add('active');
+
+    document.getElementById('tlStepWrapper').style.display = (mode === 'step') ? 'inline-flex' : 'none';
+    renderActiveTimeline();
+  }
+
+  function getActiveChecksData() {
+    const rows = document.querySelectorAll('#checksBody tr');
+    const baseDateParsed = parseShamsi(document.getElementById('orderDate').value);
+    const baseGDate = baseDateParsed ? jalaliToGregorian(baseDateParsed.y, baseDateParsed.m, baseDateParsed.d) : new Date();
+
+    const debtDateParsed = parseShamsi(document.getElementById('firstDebtDate').value);
+    const debtGDate = debtDateParsed ? jalaliToGregorian(debtDateParsed.y, debtDateParsed.m, debtDateParsed.d) : null;
+
+    const totalBal = cleanNum(document.getElementById('totalBalanceFormatted').value) || 1;
+
+    const data = [];
+    rows.forEach((row, idx) => {
+      const amt = cleanNum(row.querySelector('.chk-amount-input')?.value || 0);
+      const dtStr = row.querySelector('.chk-date')?.value || '';
+      const pDate = parseShamsi(dtStr);
+      let gDate = null, diffDaysToday = 0, diffDaysDebt = 0;
+
+      if (pDate) {
+        gDate = jalaliToGregorian(pDate.y, pDate.m, pDate.d);
+        diffDaysToday = Math.round((gDate - baseGDate) / (1000 * 60 * 60 * 24));
+        if (debtGDate) {
+          diffDaysDebt = Math.round((gDate - debtGDate) / (1000 * 60 * 60 * 24));
+        }
+      }
+
+      const percentOfTotal = ((amt / totalBal) * 100).toFixed(1);
+
+      data.push({
+        idx: idx + 1,
+        amount: amt,
+        dateStr: dtStr,
+        pDate,
+        gDate,
+        diffDaysToday,
+        diffDaysDebt,
+        percentOfTotal,
+        desc: row.querySelector('.chk-desc')?.value || ''
+      });
+    });
+    return data;
+  }
+
+  function renderActiveTimeline() {
+    const checks = getActiveChecksData();
+    const viewport = document.getElementById('timelineViewport');
+    const valid = checks.filter(c => c.gDate && c.diffDaysDebt >= 0).sort((a, b) => a.diffDaysDebt - b.diffDaysDebt);
+
+    if (valid.length === 0) {
+      viewport.innerHTML = '<div style="color: #64748b; font-size: 12px; text-align: center; width: 100%; direction: rtl;">جهت ترسیم نوار زمان، حداقل یک فقره چک با تاریخ معتبر ثبت فرمایید.</div>';
+      return;
+    }
+
+    if (currentTimelineMode === 'flow') renderFlowTimeline(valid, viewport);
+    else if (currentTimelineMode === 'calendar') renderCalendarTimeline(valid, viewport);
+    else renderStepTimeline(valid, viewport);
+  }
+
+  // مدل ۱: تقویم ماه‌به‌ماه (حذف ماه‌های بدون تعهد + کارت مبدأ بدهی در چپ + پل تقویمی پویا 📅)
+  function renderCalendarTimeline(valid, viewport) {
+    const debtDt = document.getElementById('firstDebtDate').value || '---';
+    const firstCheck = valid[0];
+    const daysToFirstCheck = firstCheck ? firstCheck.diffDaysToday : 0;
+    const todayStr = document.getElementById('orderDate').value;
+
+    const activeMonthsMap = {};
+    valid.forEach(c => {
+      if (c.pDate) {
+        const key = `${c.pDate.y}_${c.pDate.m}`;
+        if (!activeMonthsMap[key]) {
+          activeMonthsMap[key] = { y: c.pDate.y, m: c.pDate.m, name: shamsiMonths[c.pDate.m - 1], checks: [] };
+        }
+        activeMonthsMap[key].checks.push(c);
+      }
+    });
+
+    const activeMonths = Object.values(activeMonthsMap);
+
+    let html = `<div style="display: flex; align-items: center; gap: 12px; width: 100%; direction: ltr;">`;
+
+    // ۱. کارت اول سمت چپ: تاریخ اولین بدهی
+    html += `
+      <div class="flow-card purchase-origin" style="min-width: 135px; flex-shrink: 0;">
+        <span style="font-size: 10px; color: #92400e; font-weight: bold;">📍 تاریخ اولین بدهی</span>
+        <div style="font-size: 12px; font-weight: 900; color: #78350f; margin-top: 3px;">${debtDt}</div>
+        <span style="font-size: 9px; color: #b45309;">مبدأ اعتباری</span>
+      </div>
+    `;
+
+    // ۲. پل ارتباطی پویا و شکلک تقویم متحرک رو به سمت چک اول
+    html += `
+      <div class="dynamic-calendar-bridge">
+        <div class="dynamic-calendar-badge">
+          <span>📅 امروز (${todayStr})</span>
+          <span style="color: #ef4444; margin-right: 4px;">(${enToFaDigits(daysToFirstCheck)} روز مانده)</span>
+        </div>
+        <div class="bridge-arrow-line"></div>
+      </div>
+    `;
+
+    // ۳. کارت‌های ماه‌های دارای چک
+    activeMonths.forEach(mObj => {
+      html += `
+        <div style="flex: 1; min-width: 170px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; display: flex; flex-direction: column; direction: rtl;">
+          <div style="font-size: 12px; font-weight: bold; color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; text-align: center;">
+            ${mObj.name} ${enToFaDigits(mObj.y)}
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+      `;
+
+      mObj.checks.forEach(c => {
+        html += `
+          <div class="timeline-check-node" style="background: #f8fafc; border: 1px solid #e2e8f0; border-right: 3px solid #0284c7; padding: 6px; border-radius: 4px; font-size: 11px;">
+            <div style="font-weight: bold; color: #1e293b; display: flex; justify-content: space-between;">
+              <span>🎫 چک ${enToFaDigits(c.idx)}</span>
+              <span>${c.dateStr}</span>
+            </div>
+            <div style="color: #0284c7; font-weight: bold; margin-top: 2px;">${formatMoney(c.amount)} ریال</div>
+            ${renderCheckTooltip(c, false)}
+          </div>
+        `;
+      });
+
+      html += `</div></div>`;
+    });
+
+    html += `</div>`;
+    viewport.innerHTML = html;
+  }
+
+  // مدل ۲: خط‌کش روزشمار انتخابی (درج روزهای واقعی تقویم + اصلاح کادر Tooltip بدون معادل تومان)
+  function renderStepTimeline(valid, viewport) {
+    const stepDays = parseInt(document.getElementById('tlManualStepInput').value, 10) || 30;
+    const maxDaysDebt = Math.max(...valid.map(c => c.diffDaysDebt), 1);
+    const totalSteps = Math.ceil(maxDaysDebt / stepDays) + 1;
+    let rulerWidth = Math.max(totalSteps * 115, 850);
+
+    const debtDt = document.getElementById('firstDebtDate').value || '---';
+    const pDebt = parseShamsi(debtDt) || parseShamsi(document.getElementById('orderDate').value);
+    const firstCheck = valid[0];
+    const daysToFirstCheck = firstCheck ? firstCheck.diffDaysToday : 0;
+    const todayStr = document.getElementById('orderDate').value;
+
+    let html = `<div style="display: flex; align-items: center; width: 100%; direction: ltr; min-width: 850px;">`;
+
+    // ۱. کارت تاریخ اولین بدهی در سمت چپ
+    html += `
+      <div class="flow-card purchase-origin" style="min-width: 135px; flex-shrink: 0;">
+        <span style="font-size: 10px; color: #92400e; font-weight: bold;">📍 تاریخ اولین بدهی</span>
+        <div style="font-size: 12px; font-weight: 900; color: #78350f; margin-top: 3px;">${debtDt}</div>
+        <span style="font-size: 9px; color: #b45309;">مبدأ خط‌کش</span>
+      </div>
+    `;
+
+    // ۲. پل ارتباطی تقویم پویا 📅
+    html += `
+      <div class="dynamic-calendar-bridge">
+        <div class="dynamic-calendar-badge">
+          <span>📅 امروز (${todayStr})</span>
+          <span style="color: #ef4444; margin-right: 4px;">(${enToFaDigits(daysToFirstCheck)} روز مانده)</span>
+        </div>
+        <div class="bridge-arrow-line"></div>
+      </div>
+    `;
+
+    // ۳. خط‌کش مدرج روزشمار با نمایش روزهای واقعی تقویم ماه
+    html += `
+      <div style="position: relative; flex: 1; min-width: ${rulerWidth}px; height: 180px; direction: ltr;">
+        <svg width="100%" height="180" viewBox="0 0 ${rulerWidth} 180">
+          <line x1="20" y1="90" x2="${rulerWidth - 20}" y2="90" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round" />
+    `;
+
+    for (let s = 0; s < totalSteps; s++) {
+      let x = 30 + (s * (rulerWidth - 60) / (totalSteps - 1));
+      let dayVal = s * stepDays;
+      // محاسبه تاریخ دقیق تقویمی برای هر درجه خط‌کش بر مبنای تاریخ اولین بدهی
+      let tickDate = pDebt ? addDaysToJalali(pDebt.y, pDebt.m, pDebt.d, dayVal) : '';
+
+      html += `
+        <line x1="${x}" y1="84" x2="${x}" y2="96" stroke="#94a3b8" stroke-width="1.5" />
+        <text x="${x}" y="108" font-size="9.5" font-weight="bold" fill="#334155" text-anchor="middle">${tickDate}</text>
+        <text x="${x}" y="122" font-size="8.5" fill="#64748b" text-anchor="middle">(+${enToFaDigits(dayVal)} روز)</text>
+      `;
+    }
+
+    html += `</svg>`;
+
+    // جای‌گذاری چک‌ها با جهت هوشمند Tooltip (رو به پایین برای ردیف بالا)
+    valid.forEach((c, idx) => {
+      let leftPx = 30 + ((c.diffDaysDebt / (totalSteps * stepDays)) * (rulerWidth - 60));
+      let isTop = (idx % 2 === 0);
+      let topPx = isTop ? 20 : 124;
+
+      html += `
+        <div class="timeline-check-node" style="position: absolute; left: ${leftPx}px; top: ${topPx}px; transform: translateX(-50%);">
+          <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.06); white-space: nowrap; direction: rtl;">
+            <div style="font-size: 10px; font-weight: bold; color: #0284c7;">🎫 چک ${enToFaDigits(c.idx)}: ${c.dateStr}</div>
+            <div style="font-size: 10px; font-weight: bold; color: #0f172a;">${formatMoney(c.amount)} ریال</div>
+            <div style="font-size: 9px; color: #64748b;">${enToFaDigits(c.diffDaysDebt)} روزه از بدهی</div>
+          </div>
+          ${renderCheckTooltip(c, isTop)}
+        </div>
+      `;
+    });
+
+    html += `</div></div>`;
+    viewport.innerHTML = html;
+  }
+
+  // مدل ۳: کارت‌های توالی
+  function renderFlowTimeline(valid, viewport) {
+    const debtDt = document.getElementById('firstDebtDate').value || '---';
+    const firstCheck = valid[0];
+    const daysToFirstCheck = firstCheck ? firstCheck.diffDaysToday : 0;
+    const todayStr = document.getElementById('orderDate').value;
+
+    let html = `<div class="flow-chain">`;
+
+    html += `
+      <div class="flow-card purchase-origin">
+        <span style="font-size: 10px; color: #92400e; font-weight: bold;">📍 تاریخ اولین بدهی</span>
+        <div style="font-size: 12px; font-weight: 900; color: #78350f; margin-top: 3px;">${debtDt}</div>
+        <span style="font-size: 9px; color: #b45309;">مبدأ تسویه</span>
+      </div>
+    `;
+
+    html += `
+      <div class="dynamic-calendar-bridge">
+        <div class="dynamic-calendar-badge">
+          <span>📅 امروز (${todayStr})</span>
+          <span style="color: #ef4444; margin-right: 4px;">(${enToFaDigits(daysToFirstCheck)} روز مانده)</span>
+        </div>
+        <div class="bridge-arrow-line"></div>
+      </div>
+    `;
+
+    let prevDaysDebt = 0;
+    valid.forEach((c, idx) => {
+      let stepInterval = (idx === 0) ? c.diffDaysDebt : (c.diffDaysDebt - prevDaysDebt);
+      prevDaysDebt = c.diffDaysDebt;
+
+      if (idx > 0) {
+        html += `
+          <div class="flow-arrow">
+            <span>${enToFaDigits(stepInterval)} روز فاصله</span>
+            <div class="flow-arrow-line"></div>
+          </div>
+        `;
+      }
+
+      html += `
+        <div class="flow-card timeline-check-node">
+          <div style="font-size: 11px; color: #0284c7; font-weight: bold;">🎫 چک ${enToFaDigits(c.idx)}</div>
+          <div style="font-size: 12px; font-weight: bold; color: #1e293b; margin: 2px 0;">${c.dateStr}</div>
+          <div style="font-size: 12px; font-weight: bold; color: #059669;">${formatMoney(c.amount)} ریال</div>
+          <div style="font-size: 10px; color: #64748b; margin-top: 2px;">${enToFaDigits(c.diffDaysDebt)} روز از بدهی</div>
+          ${renderCheckTooltip(c, false)}
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    viewport.innerHTML = html;
+  }
+
+  // تولید کادر شناور اطلاعاتی چک (حذف معادل تومان و تغییر مبلغ عددی به مبلغ چک)
+  function renderCheckTooltip(c, isTop = false) {
+    const partner = document.getElementById('sumPartner').innerText;
+    const ttClass = isTop ? 'tt-down' : 'tt-up';
+
+    return `
+      <div class="check-tooltip ${ttClass}">
+        <div class="tt-header">مشخصات سند تجاری (چک شماره ${enToFaDigits(c.idx)})</div>
+        <div class="tt-row"><span class="tt-label">طرف‌حساب:</span> <span class="tt-val">${partner}</span></div>
+        <div class="tt-row"><span class="tt-label">مبلغ چک:</span> <span class="tt-val">${formatMoney(c.amount)} ریال</span></div>
+        <div class="tt-row"><span class="tt-label">سهم از کل بدهی:</span> <span class="tt-val">${enToFaDigits(c.percentOfTotal)}٪</span></div>
+        <div class="tt-row"><span class="tt-label">سررسید:</span> <span class="tt-val">${c.dateStr}</span></div>
+        <div class="tt-row"><span class="tt-label">فاصله از امروز:</span> <span class="tt-val">${enToFaDigits(c.diffDaysToday)} روز</span></div>
+        <div class="tt-row"><span class="tt-label">فاصله از اولین بدهی:</span> <span class="tt-val">${enToFaDigits(c.diffDaysDebt)} روز</span></div>
+        <div class="tt-row"><span class="tt-label">بابت:</span> <span class="tt-val">${c.desc}</span></div>
+      </div>
+    `;
+  }
+
+  // --- محاسبات بلادرنگ و تفکیک دوگانه رأس اعتباری و نقدینگی ---
+  function runRecalculate() {
+    const totalBal = cleanNum(document.getElementById('totalBalanceFormatted').value);
+    const rows = document.querySelectorAll('#checksBody tr');
+    const statusBar = document.getElementById('statusBar');
+
+    if (rows.length === 0) {
+      if (statusBar) statusBar.style.display = 'none';
+      renderActiveTimeline();
+      updateDashboard([], 0, 0);
+      return;
+    }
+    if (statusBar) statusBar.style.display = 'flex';
+
+    let allocatedSum = 0;
+    const baseDateParsed = parseShamsi(document.getElementById('orderDate').value);
+    const baseGDate = baseDateParsed ? jalaliToGregorian(baseDateParsed.y, baseDateParsed.m, baseDateParsed.d) : new Date();
+
+    const debtDateParsed = parseShamsi(document.getElementById('firstDebtDate').value);
+    const debtGDate = debtDateParsed ? jalaliToGregorian(debtDateParsed.y, debtDateParsed.m, debtDateParsed.d) : null;
+
+    let weightedSumToday = 0;
+    let weightedSumDebt = 0;
+    const checksData = [];
+
+    rows.forEach((row, idx) => {
+      row.querySelector('.row-index').innerText = enToFaDigits(idx + 1);
+      const amtInput = row.querySelector('.chk-amount-input');
+      const amtVal = cleanNum(amtInput ? amtInput.value : 0);
+      allocatedSum += amtVal;
+
+      row.querySelector('.amount-words').innerText = amtVal > 0 ? numToWords(amtVal) : '';
+
+      const dtInput = row.querySelector('.chk-date');
+      const metaDiv = row.querySelector('.date-meta');
+      const pDate = parseShamsi(dtInput ? dtInput.value : '');
+
+      let diffDaysToday = 0, diffDaysDebt = 0, checkGDate = null;
+      if (pDate) {
+        checkGDate = jalaliToGregorian(pDate.y, pDate.m, pDate.d);
+        diffDaysToday = Math.round((checkGDate - baseGDate) / (1000 * 60 * 60 * 24));
+        if (diffDaysToday >= 0) weightedSumToday += (amtVal * diffDaysToday);
+
+        if (debtGDate) {
+          diffDaysDebt = Math.round((checkGDate - debtGDate) / (1000 * 60 * 60 * 24));
+          if (diffDaysDebt >= 0) weightedSumDebt += (amtVal * diffDaysDebt);
+        }
+
+        if (metaDiv) {
+          metaDiv.innerHTML = isFriday(pDate.y, pDate.m, pDate.d) ? '<span class="friday-badge">⚠️ سررسید روز جمعه است!</span>' : '';
+        }
+      }
+
+      checksData.push({ idx: idx + 1, amount: amtVal, dateStr: dtInput ? dtInput.value : '', pDate, gDate: checkGDate, diffDaysToday, diffDaysDebt });
+    });
+
+    document.getElementById('allocatedSumText').innerText = formatMoney(allocatedSum);
+
+    const diff = totalBal - allocatedSum;
+    const bar = document.getElementById('statusBar');
+    const balText = document.getElementById('balanceText');
+
+    if (diff === 0) {
+      bar.className = 'status-bar status-balanced';
+      balText.innerHTML = '✅ وضعیت: تراز کامل (کلیه بدهی به چک‌ها تخصیص یافته است)';
+    } else if (diff > 0) {
+      bar.className = 'status-bar status-unbalanced';
+      balText.innerHTML = `⚠️ کسری تخصیص: مبلغ ${formatMoney(diff)} ریال هنوز به چک‌ها منتقل نشده است.`;
+    } else {
+      bar.className = 'status-bar status-unbalanced';
+      balText.innerHTML = `⚠️ مازاد تخصیص: مبالغ چک‌ها ${formatMoney(Math.abs(diff))} ریال بیشتر از مانده کل است!`;
+    }
+
+    const weightedAvgToday = allocatedSum > 0 ? Math.round(weightedSumToday / allocatedSum) : 0;
+    const weightedAvgDebt = (allocatedSum > 0 && debtGDate) ? Math.round(weightedSumDebt / allocatedSum) : 0;
+
+    document.getElementById('summaryWeightedText').innerText = allocatedSum > 0 ? `رأس نقدینگی: ${enToFaDigits(weightedAvgToday)} روز | رأس اعتباری از بدهی: ${enToFaDigits(weightedAvgDebt)} روز` : '---';
+
+    renderActiveTimeline();
+    updateDashboard(checksData, weightedAvgToday, weightedAvgDebt);
+  }
+
+  let activeFirstCheckGDate = null;
+  function updateDashboard(checks, weightedToday, weightedDebt) {
+    document.getElementById('dashWeightedDays').innerText = weightedToday > 0 ? `${enToFaDigits(weightedToday)} روز` : '---';
+    document.getElementById('dashCreditDays').innerText = weightedDebt > 0 ? `${enToFaDigits(weightedDebt)} روز` : '---';
+
+    const valid = checks.filter(c => c.gDate).sort((a, b) => a.gDate - b.gDate);
+    if (valid.length > 0) {
+      activeFirstCheckGDate = valid[0].gDate;
+      document.getElementById('dashFirstCheckSub').innerText = `اولین سررسید: ${valid[0].dateStr} (${formatMoney(valid[0].amount)} ریال)`;
+    } else {
+      activeFirstCheckGDate = null;
+      document.getElementById('dashCountdownText').innerText = 'در انتظار تنظیم چک‌ها...';
+      document.getElementById('dashFirstCheckSub').innerText = 'سررسید اولین تعهد نقدینگی';
+    }
+
+    const monthTotals = {};
+    valid.forEach(c => {
+      if (c.pDate) {
+        const mKey = `${shamsiMonths[c.pDate.m - 1]} ${enToFaDigits(c.pDate.y)}`;
+        monthTotals[mKey] = (monthTotals[mKey] || 0) + c.amount;
+      }
+    });
+
+    const mKeys = Object.keys(monthTotals);
+    document.getElementById('dashMonthlySum').innerHTML = mKeys.length > 0 ? mKeys.map(k => `<div>${k}: <strong>${formatMoney(monthTotals[k])}</strong> ریال</div>`).join('') : '---';
+  }
+
+  function updateLiveCountdown() {
+    if (!activeFirstCheckGDate) return;
+    const diffMs = activeFirstCheckGDate - new Date();
+    const cdText = document.getElementById('dashCountdownText');
+    if (diffMs <= 0) {
+      cdText.innerText = '⚠️ موعد سررسید رسیده است!';
+      cdText.style.color = '#dc2626';
+    } else {
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+      const mins = Math.floor((diffMs / (1000 * 60)) % 60);
+      const secs = Math.floor((diffMs / 1000) % 60);
+      cdText.style.color = '#0f172a';
+      cdText.innerText = `${enToFaDigits(days)} روز و ${enToFaDigits(hours)}:${enToFaDigits(mins)}:${enToFaDigits(secs)}`;
+    }
+  }
+
+  function handleTotalBalanceInput(elem) {
+    elem.value = formatMoney(cleanNum(elem.value));
+    document.getElementById('totalBalanceWords').innerText = cleanNum(elem.value) > 0 ? numToWords(elem.value) : '';
+  }
+
+  function addDaysToJalali(jy, jm, jd, daysToAdd) {
+    const gDate = jalaliToGregorian(jy, jm, jd);
+    gDate.setDate(gDate.getDate() + daysToAdd);
+    const res = gregorianToJalali(gDate.getFullYear(), gDate.getMonth() + 1, gDate.getDate());
+    const mm = res.jm < 10 ? '0' + res.jm : res.jm;
+    const dd = res.jd < 10 ? '0' + res.jd : res.jd;
+    return enToFaDigits(`${res.jy}/${mm}/${dd}`);
+  }
+
+  // --- تقویم و توابع پایه ---
+  const shamsiMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+
+  function faToEnDigits(str) {
+    if (!str && str !== 0) return '';
+    return str.toString().replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  }
+  function enToFaDigits(str) {
+    if (!str && str !== 0) return '';
+    return str.toString().replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+  }
+  function formatMoney(num) {
+    if (!num && num !== 0) return '';
+    return enToFaDigits(cleanNum(num).toLocaleString('en-US'));
+  }
+  function cleanNum(val) {
+    if (!val) return 0;
+    return parseInt(faToEnDigits(val.toString()).replace(/[^\d]/g, ''), 10) || 0;
+  }
+  function isJalaliLeap(jy) {
+    return (((jy - 474) % 2820) + 474) * 682 % 2816 < 682;
+  }
+  function getJalaliMonthDays(jy, jm) {
+    if (jm <= 6) return 31;
+    if (jm <= 11) return 30;
+    return isJalaliLeap(jy) ? 30 : 29;
+  }
+  function jalaliToGregorian(jy, jm, jd) {
+    jy = parseInt(faToEnDigits(jy), 10); jm = parseInt(faToEnDigits(jm), 10); jd = parseInt(faToEnDigits(jd), 10);
+    let gy = (jy <= 979) ? 621 : 1600;
+    jy -= (jy <= 979) ? 0 : 979;
+    let days = (365 * jy) + (Math.floor(jy / 33) * 8) + Math.floor(((jy % 33) + 3) / 4) + 78 + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+    gy += 400 * Math.floor(days / 146097); days %= 146097;
+    if (days > 36524) { gy += 100 * Math.floor(--days / 36524); days %= 36524; if (days >= 365) days++; }
+    gy += 4 * Math.floor(days / 1461); days %= 1461;
+    if (days > 365) { gy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+    let gd = days + 1;
+    const sal_a = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let gm = 0;
+    for (gm = 0; gm < 13 && gd > sal_a[gm]; gm++) gd -= sal_a[gm];
+    return new Date(gy, gm - 1, gd);
+  }
+  function gregorianToJalali(gy, gm, gd) {
+    const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    let jy = (gy <= 1600) ? 0 : 979; gy -= (gy <= 1600) ? 621 : 1600;
+    let gy2 = (gm > 2) ? (gy + 1) : gy;
+    let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
+    jy += 33 * Math.floor(days / 12053); days %= 12053;
+    jy += 4 * Math.floor(days / 1461); days %= 1461;
+    if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+    let jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+    let jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+    return { jy, jm, jd };
+  }
+  function parseShamsi(str) {
+    if (!str) return null;
+    const parts = faToEnDigits(str).replace(/[^\d\/]/g, '').split('/');
+    return parts.length === 3 ? { y: parseInt(parts[0], 10), m: parseInt(parts[1], 10), d: parseInt(parts[2], 10) } : null;
+  }
+  function isFriday(jy, jm, jd) {
+    return jalaliToGregorian(jy, jm, jd).getDay() === 5;
+  }
+  function numToWords(num) {
+    num = cleanNum(num);
+    if (!num || num === 0) return 'صفر ریال';
+    const ones = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه'];
+    const teens = ['ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'];
+    const tens = ['', '', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'];
+    const hundreds = ['', 'یکصد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'];
+    const scales = ['', ' هزار', ' میلیون', ' میلیارد', ' تریلیون'];
+
+    function convertGroup(n) {
+      let res = '', h = Math.floor(n / 100), rem = n % 100, t = Math.floor(rem / 10), o = rem % 10;
+      if (h) res += hundreds[h];
+      if (rem >= 10 && rem < 20) { if (res) res += ' و '; res += teens[rem - 10]; }
+      else { if (t) { if (res) res += ' و '; res += tens[t]; } if (o) { if (res) res += ' و '; res += ones[o]; } }
+      return res;
+    }
+    let n = Math.abs(num), chunks = [];
+    while (n > 0) { chunks.push(n % 1000); n = Math.floor(n / 1000); }
+    let parts = [];
+    for (let i = chunks.length - 1; i >= 0; i--) { if (chunks[i] > 0) parts.push(convertGroup(chunks[i]) + scales[i]); }
+    const rialStr = parts.join(' و ') + ' ریال';
+    const tomanVal = Math.floor(num / 10);
+    let tomanStr = '';
+    if (tomanVal > 0) {
+      let tChunks = [], tn = tomanVal;
+      while (tn > 0) { tChunks.push(tn % 1000); tn = Math.floor(tn / 1000); }
+      let tParts = [];
+      for (let i = tChunks.length - 1; i >= 0; i--) { if (tChunks[i] > 0) tParts.push(convertGroup(tChunks[i]) + scales[i]); }
+      tomanStr = ` (معادل ${tParts.join(' و ')} تومان)`;
+    }
+    return rialStr + tomanStr;
+  }
+
+  function updateLiveClock() {
+    const now = new Date();
+    const j = gregorianToJalali(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    const weekDays = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'];
+    const dayName = weekDays[now.getDay()];
+    
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+
+    document.getElementById('liveTimeText').innerText = `ساعت ${enToFaDigits(hh)}:${enToFaDigits(mm)}:${enToFaDigits(ss)}`;
+
+    const todayStr = enToFaDigits(`${j.jy}/${j.jm < 10 ? '0' + j.jm : j.jm}/${j.jd < 10 ? '0' + j.jd : j.jd}`);
+    document.getElementById('orderDate').value = todayStr;
+
+    updateLiveCountdown();
+  }
+
+  let activeDateInput = null, currentDPYear = 1405, currentDPMonth = 6, selectedDPDay = 21;
+  function initDPSelectors() {
+    const mSelect = document.getElementById('dpMonthSelect');
+    mSelect.innerHTML = '';
+    shamsiMonths.forEach((m, idx) => { const opt = document.createElement('option'); opt.value = idx + 1; opt.textContent = m; mSelect.appendChild(opt); });
+    const ySelect = document.getElementById('dpYearSelect');
+    ySelect.innerHTML = '';
+    for (let y = 1400; y <= 1415; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = enToFaDigits(y); ySelect.appendChild(opt); }
+  }
+  function openShamsiPicker(inputElem) {
+    activeDateInput = inputElem;
+    const modal = document.getElementById('shamsiDatePickerModal');
+    const parsed = parseShamsi(inputElem.value);
+    if (parsed) { currentDPYear = parsed.y; currentDPMonth = parsed.m; selectedDPDay = parsed.d; }
+    const rect = inputElem.getBoundingClientRect();
+    let top = rect.bottom + 4, left = rect.left;
+    if (top + 290 > window.innerHeight) top = rect.top - 294;
+    if (left + 290 > window.innerWidth) left = window.innerWidth - 300;
+    modal.style.top = `${top}px`; modal.style.left = `${left}px`; modal.style.display = 'block';
+    renderDPCalendar();
+  }
+  function onDPSelectChange() {
+    currentDPMonth = parseInt(document.getElementById('dpMonthSelect').value, 10);
+    currentDPYear = parseInt(document.getElementById('dpYearSelect').value, 10);
+    renderDPCalendar();
+  }
+  function renderDPCalendar() {
+    document.getElementById('dpMonthSelect').value = currentDPMonth;
+    document.getElementById('dpYearSelect').value = currentDPYear;
+    const daysCount = getJalaliMonthDays(currentDPYear, currentDPMonth);
+    const firstDayG = jalaliToGregorian(currentDPYear, currentDPMonth, 1);
+    let startDayIndex = (firstDayG.getDay() + 1) % 7;
+    const grid = document.getElementById('dpDaysGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < startDayIndex; i++) grid.appendChild(document.createElement('div'));
+    for (let d = 1; d <= daysCount; d++) {
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'dp-day-btn'; btn.textContent = enToFaDigits(d);
+      if (d === selectedDPDay) btn.classList.add('dp-selected');
+      if (isFriday(currentDPYear, currentDPMonth, d)) btn.classList.add('dp-friday');
+      btn.onclick = function() {
+        const mm = currentDPMonth < 10 ? '0' + currentDPMonth : currentDPMonth;
+        const dd = d < 10 ? '0' + d : d;
+        activeDateInput.value = enToFaDigits(`${currentDPYear}/${mm}/${dd}`);
+        document.getElementById('shamsiDatePickerModal').style.display = 'none';
+        if (activeDateInput.id === 'firstDebtDate') renderScheduleInputs();
+        runRecalculate();
+      };
+      grid.appendChild(btn);
+    }
+  }
+  function changeDPMonth(delta) {
+    currentDPMonth += delta;
+    if (currentDPMonth > 12) { currentDPMonth = 1; currentDPYear++; }
+    if (currentDPMonth < 1) { currentDPMonth = 12; currentDPYear--; }
+    renderDPCalendar();
+  }
+  document.addEventListener('click', e => {
+    const modal = document.getElementById('shamsiDatePickerModal');
+    if (modal && modal.style.display === 'block' && !modal.contains(e.target) && e.target !== activeDateInput) modal.style.display = 'none';
+  });
+
+  // --- خروجی‌ها و چاپ خزانه ---
+  function copyWhatsAppSummary() {
+    const partner = document.getElementById('sumPartner').innerText;
+    const accNo = document.getElementById('sumAccNo').innerText;
+    const total = document.getElementById('sumTotal').innerText;
+    const date = document.getElementById('orderDate').value;
+    const debtDt = document.getElementById('firstDebtDate').value;
+    const weightedCredit = document.getElementById('dashCreditDays').innerText;
+    const weightedTreasury = document.getElementById('dashWeightedDays').innerText;
+
+    const rows = document.querySelectorAll('#checksBody tr');
+    if (rows.length === 0) { alert('هیچ چکی برای ارسال ثبت نشده است.'); return; }
+
+    let msg = `📋 *دستور صدور چک و تسویه بازرگانی نوران*\n👤 *طرف‌حساب:* ${partner} (کد: ${accNo})\n💰 *مبلغ کل بدهی:* ${total}\n📅 *تاریخ صدور:* ${date}\n📍 *تاریخ اولین بدهی:* ${debtDt || '---'}\n🤝 *رأس اعتباری از بدهی:* ${weightedCredit}\n🏦 *رأس نقدینگی خزانه:* ${weightedTreasury}\n\n*برنامه چک‌های صادره:*\n`;
+    rows.forEach((r, i) => {
+      msg += `${enToFaDigits(i + 1)}) مبلغ: ${r.querySelector('.chk-amount-input').value} ریال - سررسید: ${r.querySelector('.chk-date').value} (${r.querySelector('.chk-desc').value})\n`;
+    });
+    navigator.clipboard.writeText(msg).then(() => alert('متن خلاصه کپی شد. می‌توانید در پیام‌رسان Paste فرمایید.'));
+  }
+
+  function printOrderSheet() {
+    const rows = document.querySelectorAll('#checksBody tr');
+    if (rows.length === 0) { alert('حداقل یک چک در جدول ثبت فرمایید.'); return; }
+
+    const totalBal = cleanNum(document.getElementById('totalBalanceFormatted').value);
+    document.getElementById('prnRefNo').innerText = 'NOR-' + Math.floor(100000 + Math.random() * 900000);
+    document.getElementById('prnDate').innerText = document.getElementById('orderDate').value;
+    document.getElementById('prnDebtDate').innerText = document.getElementById('firstDebtDate').value || '---';
+    document.getElementById('prnPartner').innerText = document.getElementById('partnerName').value || '---';
+    document.getElementById('prnAccNo').innerText = document.getElementById('accountNo').value || '---';
+    document.getElementById('prnTotalNum').innerText = formatMoney(totalBal);
+    document.getElementById('prnTotalWords').innerText = numToWords(totalBal);
+    document.getElementById('prnCheckCount').innerText = enToFaDigits(rows.length);
+    document.getElementById('prnReceiptCount').innerText = enToFaDigits(rows.length);
+    document.getElementById('prnWeighted').innerText = document.getElementById('summaryWeightedText').innerText;
+
+    const tBodyA = document.getElementById('prnTableBodyA'), tBodyB = document.getElementById('prnTableBodyB');
+    tBodyA.innerHTML = ''; tBodyB.innerHTML = '';
+
+    rows.forEach((r, i) => {
+      const amt = cleanNum(r.querySelector('.chk-amount-input').value);
+      const dt = r.querySelector('.chk-date').value;
+      const desc = r.querySelector('.chk-desc').value;
+
+      const trA = document.createElement('tr');
+      trA.innerHTML = `<td>${enToFaDigits(i + 1)}</td><td style="font-weight: bold; text-align: left;">${formatMoney(amt)}</td><td style="font-size: 11px; text-align: right; line-height: 1.6;">${numToWords(amt)}</td><td>${dt}</td><td style="text-align: right;">${desc}</td>`;
+      tBodyA.appendChild(trA);
+
+      const trB = document.createElement('tr');
+      trB.innerHTML = `<td>${enToFaDigits(i + 1)}</td><td style="height: 38px;"></td><td style="height: 38px;"></td><td>${dt}</td><td style="height: 38px;"></td>`;
+      tBodyB.appendChild(trB);
+    });
+    window.print();
+  }
+
+  function saveCurrentOrder() {
+    const rows = document.querySelectorAll('#checksBody tr');
+    if (rows.length === 0) { alert('جدول چک‌ها خالی است.'); return; }
+    const checks = Array.from(rows).map(r => ({
+      amount: cleanNum(r.querySelector('.chk-amount-input').value),
+      date: r.querySelector('.chk-date').value,
+      desc: r.querySelector('.chk-desc').value
+    }));
+
+    const record = {
+      id: 'NOR-' + Math.floor(1000 + Math.random() * 9000),
+      partner: document.getElementById('partnerName').value,
+      accountNo: document.getElementById('accountNo').value,
+      total: cleanNum(document.getElementById('totalBalanceFormatted').value),
+      orderDate: document.getElementById('orderDate').value,
+      debtDate: document.getElementById('firstDebtDate').value,
+      checks
+    };
+
+    let history = JSON.parse(localStorage.getItem('nouran_pay_v_complete_final_v2') || '[]');
+    history.unshift(record);
+    localStorage.setItem('nouran_pay_v_complete_final_v2', JSON.stringify(history.slice(0, 20)));
+    renderHistory();
+    alert('دستور پرداخت در سوابق ذخیره شد.');
+  }
+
+  function renderHistory() {
+    const history = JSON.parse(localStorage.getItem('nouran_pay_v_complete_final_v2') || '[]');
+    const hb = document.getElementById('historyBody');
+    if (!hb) return;
+    hb.innerHTML = '';
+    history.forEach((h, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><strong>${h.id}</strong></td><td>${h.accountNo || '---'}</td><td>${h.partner || '---'}</td><td>${formatMoney(h.total)}</td><td>${enToFaDigits(h.checks ? h.checks.length : '-')} فقره</td><td>${h.orderDate}</td><td><button type="button" class="btn btn-secondary" style="font-size: 10px;" onclick="restoreRecord(${idx})">فراخوانی</button> <button type="button" class="btn-danger" style="font-size: 10px;" onclick="deleteHistory(${idx})">حذف</button></td>`;
+      hb.appendChild(tr);
+    });
+  }
+
+  function restoreRecord(idx) {
+    const history = JSON.parse(localStorage.getItem('nouran_pay_v_complete_final_v2') || '[]');
+    const rec = history[idx];
+    if (!rec) return;
+
+    document.getElementById('accountNo').value = rec.accountNo;
+    document.getElementById('partnerName').value = rec.partner;
+    document.getElementById('totalBalanceFormatted').value = formatMoney(rec.total);
+    document.getElementById('firstDebtDate').value = rec.debtDate || '';
+
+    const tbody = document.getElementById('checksBody');
+    tbody.innerHTML = '';
+    rec.checks.forEach(c => addNewCheckRow(c.amount, c.date, c.desc));
+
+    document.getElementById('step1View').style.display = 'none';
+    document.getElementById('step2View').style.display = 'block';
+    document.getElementById('sumPartner').innerText = rec.partner || '---';
+    document.getElementById('sumAccNo').innerText = rec.accountNo || '---';
+    document.getElementById('sumTotal').innerText = `${formatMoney(rec.total)} ریال`;
+    document.getElementById('sumDebtDate').innerText = rec.debtDate || 'ثبت نشده';
+    runRecalculate();
+  }
+
+  function deleteHistory(idx) {
+    let history = JSON.parse(localStorage.getItem('nouran_pay_v_complete_final_v2') || '[]');
+    history.splice(idx, 1);
+    localStorage.setItem('nouran_pay_v_complete_final_v2', JSON.stringify(history));
+    renderHistory();
+  }
+
+  function exportBackup() {
+    const blob = new Blob([JSON.stringify({ history: JSON.parse(localStorage.getItem('nouran_pay_v_complete_final_v2') || '[]') }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Nouran_Backup.json'; a.click();
+  }
+
+  function importBackup(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const json = JSON.parse(e.target.result);
+        if (json.history) { localStorage.setItem('nouran_pay_v_complete_final_v2', JSON.stringify(json.history)); renderHistory(); alert('سوابق با موفقیت بازیابی شد.'); }
+      } catch (err) { alert('فایل نامعتبر است.'); }
+    };
+    reader.readAsText(file);
+  }
+
+  // راه‌اندازی اولیه
+  function initApp() {
+    initDPSelectors();
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
+    renderScheduleInputs();
+    renderHistory();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initApp);
+  else initApp();
+</script>
+</body>
+</html>
